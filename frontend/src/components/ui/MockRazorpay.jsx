@@ -18,8 +18,12 @@ export function MockRazorpay({ isOpen, onClose, amount, fundName, onSuccess }) {
 
   const handlePay = () => {
     // Basic authentic user-feel validations
-    if (method === 'upi' && upiId.length < 5) return alert("Please enter a valid simulated UPI ID (e.g. rohan@okhdfcbank)");
-    if (method === 'card' && (cardNumber.length < 12 || cvv.length < 3)) return alert("Please enter simulated 16-digit card details to proceed.");
+    if (method === 'upi' && upiId.length < 5) return alert("Security Error: Invalid UPI ID structure.");
+    if (method === 'card') {
+       if (cardNumber.replace(/\s/g, '').length !== 16) return alert("Security Error: Card Number must be exactly 16 digits.");
+       if (cvv.length !== 3) return alert("Security Error: CVV must be exactly 3 digits.");
+       if (expiry.length !== 5) return alert("Security Error: Expiry must match MM/YY format.");
+    }
 
     setStatus('processing');
     setTimeout(() => {

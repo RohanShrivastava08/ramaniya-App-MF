@@ -15,6 +15,16 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function KycProtectedRoute({ children }) {
+  const user = localStorage.getItem('ramaniya_user');
+  if (!user) return <Navigate to="/" replace />;
+  
+  const kyc = localStorage.getItem('ramaniya_kyc');
+  if (!kyc) return <Navigate to="/onboarding" replace />;
+  
+  return children;
+}
+
 function App() {
   useEffect(() => {
     document.title = "Ramaniya | Invest Smarter, Grow Wealth";
@@ -36,9 +46,9 @@ function App() {
         <Route 
           path="/dashboard" 
           element={
-            <ProtectedRoute>
+            <KycProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
+            </KycProtectedRoute>
           } 
         />
         <Route 
@@ -52,9 +62,9 @@ function App() {
         <Route 
           path="/invest/:fundId" 
           element={
-            <ProtectedRoute>
+            <KycProtectedRoute>
               <InvestFlow />
-            </ProtectedRoute>
+            </KycProtectedRoute>
           } 
         />
       </Routes>

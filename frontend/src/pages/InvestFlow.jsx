@@ -30,6 +30,17 @@ export function InvestFlow() {
       alert("Session expired. Please log in again.");
       return navigate('/');
     }
+    
+    const numAmount = Number(amount);
+    if (!numAmount || isNaN(numAmount) || numAmount < 500) {
+      alert("Security Error: Minimum investment amount is ₹500.");
+      return;
+    }
+    if (numAmount > 10000000) {
+      alert("Security Error: Maximum single-tranche investment capped at ₹1,00,00,000.");
+      return;
+    }
+    
     // Launch Razorpay Mock Payment Gateway instead of raw processing
     setIsRazorpayOpen(true);
   };
