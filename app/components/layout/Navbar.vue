@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Menu, X, TrendingUp } from 'lucide-vue-next'
+import { Menu, X, TrendingUp, Heart } from 'lucide-vue-next'
 import Button from '~/components/ui/Button.vue'
 
 interface Props {
@@ -48,6 +48,9 @@ onUnmounted(() => {
             News <span class="bg-fintech-blue-50 text-fintech-blue-600 text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded shadow-sm">Live</span>
         </NuxtLink>
         <a href="/#funds" class="hover:text-fintech-green-600 transition-colors">Funds</a>
+        <NuxtLink v-if="user" to="/watchlist" class="hover:text-fintech-green-600 transition-colors flex items-center gap-1.5">
+            <Heart :size="14" /> Watchlist
+        </NuxtLink>
       </nav>
 
       <!-- Desktop Actions -->
@@ -80,6 +83,9 @@ onUnmounted(() => {
           News <span class="bg-fintech-blue-50 text-fintech-blue-600 text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded shadow-sm">Live</span>
       </NuxtLink>
       <a href="/#funds" class="block font-medium text-slate-700 py-2">Funds</a>
+      <NuxtLink v-if="user" to="/watchlist" class="block font-medium text-slate-700 py-2 flex items-center gap-2">
+          <Heart :size="16" /> Watchlist
+      </NuxtLink>
       <div class="pt-4 border-t border-slate-100 flex flex-col gap-3">
         <template v-if="user">
           <div class="text-center text-sm font-semibold text-fintech-green-700 bg-fintech-green-50 py-2 rounded-lg">Welcome, {{ user.name }}</div>

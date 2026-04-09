@@ -97,14 +97,14 @@ const calculation = computed(() => {
 // ApexCharts Configuration translation from Recharts
 const chartOptions = computed(() => ({
   chart: { 
-    type: 'line', 
+    type: 'line' as const, 
     toolbar: { show: false }, 
     zoom: { enabled: false },
     fontFamily: 'inherit',
     parentHeightOffset: 0
   },
   colors: ['#16a34a'],
-  stroke: { curve: 'monotoneCubic', width: 3 },
+  stroke: { curve: 'monotoneCubic' as const, width: 3 },
   xaxis: { 
     categories: fund.value?.chartData.map((d: any) => d.name) || [], 
     labels: { style: { colors: '#94a3b8', fontSize: '10px', fontWeight: 'bold' } },

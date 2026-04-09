@@ -1,5 +1,5 @@
 /* mockData.js */
-const generateChart = (base) => {
+const generateChart = (base: number) => {
   return [
     { name: 'Jan', val: base * 0.9 },
     { name: 'Feb', val: base * 0.95 },

@@ -1,20 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, TrendingUp, Landmark, Activity, Loader2 } from 'lucide-vue-next'
+import { ArrowLeft, TrendingUp, Landmark, Activity, Loader2, Heart } from 'lucide-vue-next'
 import { fetchLiveFunds } from '~/lib/liveData'
 import Button from '~/components/ui/Button.vue'
 import Card from '~/components/ui/Card.vue'
 
 const router = useRouter()
+const user = useUser()
 const isOnboarding = ref(false)
 const catalog = ref<any[]>([])
 const loading = ref(true)
+const watchlist = ref<string[]>([])
 
 onMounted(async () => {
   try {
-    const investments = await $fetch<any[]>('/api/transactions')
-    isOnboarding.value = investments.length === 0
+    const [transactions, watchlistData] = await Promise.all([
+      user.value ? $fetch<any[]>('/api/transactions') : Promise.resolve([]),
+      user.value ? $fetch<string[]>('/api/watchlist') : Promise.resolve([])
+    ])
+    isOnboarding.value = user.value ? transactions.length === 0 : true
+    watchlist.value = watchlistData
   } catch(e) {
     isOnboarding.value = true
   }
@@ -23,84 +29,116 @@ onMounted(async () => {
   loading.value = false
 })
 
+const toggleWatchlist = async (e: Event, fundId: string) => {
+  e.stopPropagation() // Prevent card click (router navigation)
+  if (!user.value) {
+    alert("Please log in to save funds to your watchlist.")
+    return
+  }
+
+  try {
+    const res = await $fetch<{action: string}>('/api/watchlist/toggle', {
+      method: 'POST',
+      body: { fundId }
+    })
+    
+    if (res.action === 'added') {
+      watchlist.value.push(fundId)
+    } else {
+      watchlist.value = watchlist.value.filter(id => id !== fundId)
+    }
+  } catch (e) {
+    console.error("Failed to toggle watchlist", e)
+  }
+}
+
+const isInWatchlist = (fundId: string) => watchlist.value.includes(fundId)
+
 const categories = [
-  { id: 'Equity', icon: TrendingUp, iconClass: "text-fintech-green-600", desc: "High growth potential over long term horizons." },
+  { id: 'Equity', icon: TrendingUp, iconClass: "text-emerald-600", desc: "High growth potential over long term horizons." },
   { id: 'Debt', icon: Landmark, iconClass: "text-purple-600", desc: "Stable returns, safe fixed-income assets." },
-  { id: 'Hybrid', icon: Activity, iconClass: "text-fintech-blue-600", desc: "Optimized balanced portfolio buffering equity volatility." }
+  { id: 'Hybrid', icon: Activity, iconClass: "text-blue-600", desc: "Optimized balanced portfolio buffering equity volatility." }
 ]
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-8 mb-20">
-    <div class="max-w-[1400px] mx-auto">
+  <div class="min-h-screen bg-white p-4 md:p-8 mb-20 pt-24 font-sans antialiased text-slate-900">
+    <div class="max-w-[1280px] mx-auto">
       
-      <div v-if="isOnboarding" class="flex justify-between items-center mb-8">
-        <div class="text-fintech-green-600 font-bold bg-fintech-green-50 px-4 py-1.5 rounded-full text-xs tracking-widest uppercase shadow-sm border border-fintech-green-100">Step 3 of 4: Select Asset</div>
-        <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-slate-400 hover:text-slate-700 transition-colors font-bold text-sm tracking-wider uppercase">
-           Skip directly to Dashboard
+      <!-- Header Navigation -->
+      <div v-if="user" class="mb-10 flex items-center justify-between">
+        <button @click="router.push('/dashboard')" class="text-slate-500 hover:text-emerald-600 transition-colors flex items-center gap-2 group">
+          <ArrowLeft :size="18" class="group-hover:-translate-x-1 transition-transform" />
+          <span class="text-xs font-bold uppercase tracking-widest">Back to Portfolio</span>
         </button>
-      </div>
-      <div v-else>
-        <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-8 transition-colors font-bold uppercase tracking-widest text-xs">
-          <ArrowLeft :size="16" /> Back to Portfolio
-        </button>
+        <NuxtLink v-if="user" to="/watchlist" class="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 hover:bg-emerald-100 transition-colors">
+          <Heart :size="14" class="fill-emerald-600" />
+          View Watchlist
+        </NuxtLink>
       </div>
       
-      <div class="mb-12">
-        <h1 class="text-3xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
-          Explore Curated Funds
+      <div class="mb-16">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-[#111827] mb-5 tracking-tight leading-tight">
+          Explore Mutual Funds
         </h1>
-        <p class="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Discover SEBI-verified top-performing indices. Select a fund to project calculations and start your SIP.</p>
+        <p class="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">
+          Discover a curated list of top-performing mutual funds in India. Minimal risk, maximum growth.
+        </p>
       </div>
       
-      <div class="space-y-12">
-        <div v-if="loading" class="flex flex-col items-center justify-center p-20 text-fintech-green-600">
+      <div class="space-y-20">
+        <div v-if="loading" class="flex flex-col items-center justify-center p-32 text-emerald-600">
            <Loader2 :size="48" class="animate-spin mb-4" />
-           <p class="font-bold text-slate-500 tracking-widest uppercase">Fetching Live Market NAV</p>
+           <p class="font-bold text-slate-400 tracking-widest uppercase text-xs">Syncing Market NAVs</p>
         </div>
         
         <template v-else>
           <template v-for="cat in categories" :key="cat.id">
-            <div v-if="catalog.filter(f => f.category === cat.id).length > 0" class="animate-fade-in-up duration-700">
-              <div class="mb-6 flex items-center gap-3 border-b border-slate-200 pb-3">
-                <div class="p-2.5 rounded-xl shadow-sm bg-white border border-slate-200">
-                  <component :is="cat.icon" :size="20" :class="cat.iconClass" />
-                </div>
-                <div>
-                  <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ cat.id }} Catalog</h2>
-                  <p class="text-slate-500 text-xs font-bold mt-0.5 uppercase tracking-wider">{{ cat.desc }}</p>
-                </div>
+            <div v-if="catalog.filter(f => f.category === cat.id).length > 0" class="animate-fade-in-up">
+              <div class="mb-8 flex items-baseline gap-4">
+                <h2 class="text-2xl font-bold text-slate-900">{{ cat.id }} Funds</h2>
+                <p class="text-slate-400 text-sm font-medium">{{ catalog.filter(f => f.category === cat.id).length }} funds found</p>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <Card 
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div 
                   v-for="fund in catalog.filter(f => f.category === cat.id)" 
                   :key="fund.id" 
-                  class="p-5 bg-white border border-slate-200 hover:border-fintech-green-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col rounded-2xl h-full" 
+                  class="relative bg-white border border-slate-100 p-6 rounded-2xl hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all cursor-pointer group flex flex-col h-full ring-1 ring-slate-100/50" 
                   @click="router.push(`/invest/${fund.id}`)"
                 >
-                  <div class="flex justify-between items-start mb-4">
-                    <span class="text-[9px] font-black px-2 py-1 bg-slate-50 border border-slate-200 text-slate-500 rounded uppercase tracking-widest shadow-sm">{{ fund.risk }}</span>
-                    <span class="text-[9px] font-black px-2 py-1 bg-fintech-green-50 text-fintech-green-700 rounded border border-fintech-green-100 shadow-sm uppercase tracking-widest">Growth</span>
-                  </div>
-                  
-                  <h3 class="text-lg font-black text-slate-900 mb-6 group-hover:text-fintech-green-600 transition-colors line-clamp-2 leading-snug">{{ fund.name }}</h3>
-                  
-                  <div class="grid grid-cols-2 gap-4 mb-6 mt-auto bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <div>
-                      <p class="text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-widest">3Y CAGR</p>
-                      <p class="text-xl font-black text-fintech-green-600 tracking-tighter">+{{ fund.cagr3Y }}%</p>
-                    </div>
-                    <div class="border-l border-slate-200 pl-4">
-                      <p class="text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-widest">NAV</p>
-                      <p class="text-xl font-bold text-slate-900 tracking-tighter">₹{{ fund.nav }}</p>
-                    </div>
-                  </div>
+                  <!-- Heart Button -->
+                  <button 
+                    @click="(e) => toggleWatchlist(e, fund.id)"
+                    class="absolute top-4 right-4 p-2.5 rounded-full bg-slate-50 border border-slate-100 text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all z-10 hover:scale-110 active:scale-95"
+                  >
+                    <Heart :size="18" :class="isInWatchlist(fund.id) ? 'fill-rose-500 text-rose-500' : ''" />
+                  </button>
 
-                  <Button class="w-full h-10 text-sm shadow-sm font-bold tracking-wide rounded-xl bg-slate-900 text-white group-hover:bg-fintech-green-600 transition-colors border-none mt-auto">
-                    Invest 
-                  </Button>
-                </Card>
+                  <div class="flex items-center gap-2 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-sm font-bold text-slate-400 border border-slate-100">
+                      {{ fund.name.charAt(0) }}
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md uppercase tracking-wider border border-emerald-100">{{ fund.risk }}</span>
+                    </div>
+                  </div>
+                  
+                  <h3 class="text-[17px] font-bold text-slate-800 mb-8 leading-snug group-hover:text-emerald-600 transition-colors line-clamp-2 min-h-[3rem]">
+                    {{ fund.name }}
+                  </h3>
+                  
+                  <div class="flex items-end justify-between mt-auto pt-6 border-t border-slate-50">
+                    <div>
+                      <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">3Y Returns</p>
+                      <p class="text-lg font-black text-emerald-600 tracking-tight">{{ fund.cagr3Y }}%</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">NAV</p>
+                      <p class="text-lg font-bold text-slate-800 tracking-tight">₹{{ fund.nav }}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </template>
@@ -109,3 +147,11 @@ const categories = [
     </div>
   </div>
 </template>
+
+<style scoped>
+.grid > div {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+</style>
+

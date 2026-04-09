@@ -69,9 +69,9 @@ const deleteInvestment = async (id: string) => {
 const portfolioStats = computed(() => {
   let totalInvested = 0
   let currentValue = 0
-  let allocation: Record<string, number> = { Equity: 0, Debt: 0, Hybrid: 0 }
+  const allocation: { [key: string]: number } = { Equity: 0, Debt: 0, Hybrid: 0 }
 
-  investments.value.forEach(inv => {
+  investments.value.forEach((inv: any) => {
     totalInvested += inv.amount
     const fundDetails = FUND_DB.find((f: any) => f.name === inv.fundName)
     const simulatedReturn = fundDetails ? (inv.amount * (Number(fundDetails.currentReturn) / 100)) : (inv.amount * 0.05)
@@ -90,9 +90,9 @@ const portfolioStats = computed(() => {
     currentValue,
     totalReturn,
     returnPercentage,
-    eqPct: totalInvested > 0 ? (allocation.Equity / totalInvested) * 100 : 0,
-    dtPct: totalInvested > 0 ? (allocation.Debt / totalInvested) * 100 : 0,
-    hbPct: totalInvested > 0 ? (allocation.Hybrid / totalInvested) * 100 : 0,
+    eqPct: totalInvested > 0 ? ((allocation.Equity || 0) / totalInvested) * 100 : 0,
+    dtPct: totalInvested > 0 ? ((allocation.Debt || 0) / totalInvested) * 100 : 0,
+    hbPct: totalInvested > 0 ? ((allocation.Hybrid || 0) / totalInvested) * 100 : 0,
   }
 })
 </script>
@@ -246,10 +246,10 @@ const portfolioStats = computed(() => {
                     <div class="border-l border-slate-100 pl-8 md:pl-12">
                       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Unrealized P&L</p>
                       <div class="flex items-center gap-2">
-                        <p :class="`text-xl font-black tracking-tight ${Number(FUND_DB.find(f => f.name === inv.fundName)?.currentReturn || 5) > 0 ? 'text-fintech-green-600' : 'text-red-500'}`">
-                          {{ Number(FUND_DB.find(f => f.name === inv.fundName)?.currentReturn || 5) > 0 ? '+' : '' }}{{ FUND_DB.find(f => f.name === inv.fundName)?.currentReturn || 5 }}%
+                        <p :class="`text-xl font-black tracking-tight ${Number(FUND_DB.find((f: any) => f.name === inv.fundName)?.currentReturn || 5) > 0 ? 'text-fintech-green-600' : 'text-red-500'}`">
+                          {{ Number(FUND_DB.find((f: any) => f.name === inv.fundName)?.currentReturn || 5) > 0 ? '+' : '' }}{{ FUND_DB.find((f: any) => f.name === inv.fundName)?.currentReturn || 5 }}%
                         </p>
-                        <TrendingUp v-if="Number(FUND_DB.find(f => f.name === inv.fundName)?.currentReturn || 5) > 0" :size="16" class="text-fintech-green-500"/>
+                        <TrendingUp v-if="Number(FUND_DB.find((f: any) => f.name === inv.fundName)?.currentReturn || 5) > 0" :size="16" class="text-fintech-green-500"/>
                         <TrendingDown v-else :size="16" class="text-red-500"/>
                       </div>
                     </div>

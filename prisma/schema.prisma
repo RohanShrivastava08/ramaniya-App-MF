@@ -20,6 +20,7 @@ model User {
   
   transactions Transaction[]
   sessions     Session[]
+  watchlist    Watchlist[]
 }
 
 model Session {
@@ -65,4 +66,15 @@ enum TransactionStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  fundId    String   // Corresponds to the fund name or ID
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fundId])
 }
